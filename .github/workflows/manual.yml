@@ -1,32 +1,38 @@
-# This is a basic workflow that is manually triggered
+# .github/workflows/deploy-and-run.yml
+name: Deploy and run DAB
 
-name: Manual workflow
-
-# Controls when the action will run. Workflow runs when manually triggered using the UI
-# or API.
 on:
   workflow_dispatch:
-    # Inputs the workflow accepts.
-    inputs:
-      name:
-        # Friendly description to be shown in the UI instead of 'name'
-        description: 'Person to greet'
-        # Default value if no value is explicitly provided
-        default: 'World'
-        # Input has to be provided for the workflow to run
-        required: true
-        # The data type of the input
-        type: string
+  push:
+    branches: [main]
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+permissions:
+  contents: read
+  id-token: write # Required for OIDC authentication
+
 jobs:
-  # This workflow contains a single job called "greet"
-  greet:
-    # The type of runner that the job will run on
+  deploy-and-run:
     runs-on: ubuntu-latest
+    environment: prod
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_BUNDLE_TARGET: prod
+
     steps:
-    # Runs a single command using the runners shell
-    - name: Send greeting
-      run: echo "Hello ${{ inputs.name }}"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate bundle
+        run: databricks bundle validate --target "$DATABRICKS_BUNDLE_TARGET"
+
+      - name: Deploy bundle
+        run: databricks bundle deploy --target "$DATABRICKS_BUNDLE_TARGET"
+
+      - name: Trigger DAB job
+        run: databricks bundle run my_job --target "$DATABRICKS_BUNDLE_TARGET"
