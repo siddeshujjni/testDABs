@@ -11,9 +11,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'databricks.yml'
-      - 'resources/**'
-      - 'src/**'
+      - 'enbridge_supply_chain/databricks.yml'
+      - 'enbridge_supply_chain/resources/**'
+      - 'enbridge_supply_chain/src/**'
 
 # Required for Workload Identity Federation (OIDC)
 permissions:
@@ -31,6 +31,10 @@ jobs:
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_PROD }}
       DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_SP_CLIENT_ID_PROD }}
       DATABRICKS_AUTH_TYPE: github-oidc
+
+    defaults:
+      run:
+        working-directory: enbridge_supply_chain
 
     steps:
       # 1. Checkout the merged code

@@ -1,0 +1,38 @@
+# .github/workflows/deploy-and-run.yml
+name: Deploy and run DAB
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write # Required for OIDC authentication
+
+jobs:
+  deploy-and-run:
+    runs-on: ubuntu-latest
+    environment: prod
+
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_BUNDLE_TARGET: prod
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate bundle
+        run: databricks bundle validate --target "$DATABRICKS_BUNDLE_TARGET"
+
+      - name: Deploy bundle
+        run: databricks bundle deploy --target "$DATABRICKS_BUNDLE_TARGET"
+
+      - name: Trigger DAB job
+        run: databricks bundle run my_job --target "$DATABRICKS_BUNDLE_TARGET"
