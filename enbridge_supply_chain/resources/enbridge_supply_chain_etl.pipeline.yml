@@ -1,0 +1,38 @@
+# =============================================================================
+# Enbridge SCM Lakeflow Spark Declarative Pipeline
+# Processes Supply Chain data through Bronze -> Silver -> Gold layers
+# =============================================================================
+
+resources:
+  pipelines:
+    enbridge_supply_chain_etl:
+      name: "Enbridge SCM Pipeline"
+
+      # Unity Catalog integration
+      catalog: ${var.catalog}
+      target: ${var.schema}                     # 'target' = schema in pipeline context
+
+      # Serverless compute (recommended)
+      serverless: true
+      photon: true
+      channel: current
+
+      # Source code
+      root_path: "../src/enbridge_supply_chain_etl"
+      libraries:
+        - glob:
+            include: ../src/enbridge_supply_chain_etl/transformations/**
+
+      # Pipeline configuration (accessible in notebooks/SQL via spark.conf)
+      configuration:
+        source_catalog: ${var.catalog}
+        source_schema: ${var.schema}
+
+      # Development mode (overridden per target if needed)
+      development: true
+      continuous: false
+
+      # Permissions
+      permissions:
+        - level: CAN_VIEW
+          group_name: "users"

@@ -1,0 +1,22 @@
+# =============================================================================
+# Enbridge Supply Chain Delay Monitor Dashboard
+# Visualizes delay metrics, supplier risk scores, and procurement KPIs
+# =============================================================================
+
+resources:
+  dashboards:
+    scm_dashboard:
+      display_name: "Enbridge Supply Chain Delay Monitor"
+      # The dashboard JSON file (export from Databricks UI via bundle generate)
+      file_path: ../src/dashboards/scm_delay_monitor.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+
+      # Catalog/schema parameterization (CLI v0.281.0+)
+      # Ensures dashboard queries point to the correct environment
+      dataset_catalog: ${var.catalog}
+      dataset_schema: ${var.schema}
+
+      # Permissions
+      permissions:
+        - level: CAN_READ
+          group_name: "users"

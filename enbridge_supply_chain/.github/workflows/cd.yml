@@ -1,0 +1,54 @@
+# =============================================================================
+# CD Pipeline: Deploy Enbridge SCM Bundle to Production
+# =============================================================================
+# Triggers on merge to main (after PR approved + CI passes).
+# Deploys all resources (jobs, pipelines, dashboards) to production.
+# =============================================================================
+
+name: "CD - Deploy to Production"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'databricks.yml'
+      - 'resources/**'
+      - 'src/**'
+
+# Required for Workload Identity Federation (OIDC)
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-prod:
+    name: "Deploy to Production"
+    runs-on: ubuntu-latest
+    environment: prod     # GitHub Environment (may require manual approval)
+
+    env:
+      # Workload Identity Federation - no secrets needed!
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_PROD }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_SP_CLIENT_ID_PROD }}
+      DATABRICKS_AUTH_TYPE: github-oidc
+
+    steps:
+      # 1. Checkout the merged code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Install Databricks CLI
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      # 3. Safety validation before deploying
+      - name: Validate Bundle (prod)
+        run: databricks bundle validate --strict --target prod
+
+      # 4. Deploy all resources to production
+      - name: Deploy to Production
+        run: databricks bundle deploy --target prod
+
+      # 5. Verify the deployment succeeded
+      - name: Verify Deployment
+        run: databricks bundle summary --target prod

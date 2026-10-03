@@ -1,0 +1,47 @@
+# =============================================================================
+# Enbridge SCM ETL Job
+# Orchestrates the full Bronze -> Silver -> Gold pipeline
+# =============================================================================
+
+resources:
+  jobs:
+    scm_etl_job:
+      name: "Enbridge SCM ETL Pipeline"
+
+      # Schedule: Run daily at 6 AM Eastern Time
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: "America/Toronto"
+
+      # Email notifications on failure
+      email_notifications:
+        on_failure:
+          - siddesh.ujjni@databricks.com
+
+      # Job-level parameters
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+
+      # -----------------------------------------------------------------------
+      # Task DAG: Pipeline -> Dashboard Refresh
+      # -----------------------------------------------------------------------
+      tasks:
+        # Task 1: Run the SDP pipeline (Bronze -> Silver -> Gold)
+        - task_key: run_scm_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.enbridge_supply_chain_etl.id}
+
+        # Task 2: Run the sample notebook (data quality checks)
+        - task_key: data_quality_checks
+          depends_on:
+            - task_key: run_scm_pipeline
+          notebook_task:
+            notebook_path: ../src/sample_notebook.ipynb
+
+      # Permissions
+      permissions:
+        - level: CAN_VIEW
+          group_name: "users"

@@ -1,0 +1,67 @@
+# =============================================================================
+# Enbridge Supply Chain Management - Declarative Automation Bundle
+# =============================================================================
+# This bundle defines all Databricks resources for the Enbridge SCM data
+# platform: ETL jobs, SDP pipelines, and dashboards.
+#
+# Docs: https://docs.databricks.com/dev-tools/bundles/index.html
+# =============================================================================
+
+bundle:
+  name: enbridge_supply_chain
+  uuid: fb459491-f0df-4493-9c47-4a031f0467a2
+
+include:
+  - resources/*.yml
+
+# =============================================================================
+# VARIABLES
+# Parameterize values that change across environments.
+# =============================================================================
+variables:
+  catalog:
+    description: Unity Catalog name for data assets
+    default: serverless_stable_qr9if1_catalog
+  schema:
+    description: Schema for SCM tables
+    default: enbridge_scm
+  warehouse_id:
+    description: SQL Warehouse for queries and dashboards
+    lookup:
+      warehouse: Serverless Starter Warehouse
+
+# =============================================================================
+# TARGETS
+# Environment-specific configurations for dev and prod.
+# =============================================================================
+targets:
+  # ---------------------------------------------------------------------------
+  # DEV: Development & testing
+  # - Resources prefixed with [dev username]
+  # - Schedules/triggers paused
+  # - Pipeline set to development mode
+  # ---------------------------------------------------------------------------
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://fevm-serverless-stable-qr9if1.cloud.databricks.com
+    variables:
+      catalog: serverless_stable_qr9if1_catalog
+      schema: enbridge_scm_dev
+      
+  prod:
+    mode: production
+    workspace:
+      host: https://fevm-serverless-stable-qr9if1.cloud.databricks.com
+      root_path: /Shared/enbridge-scm/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      # In production, replace with a service principal:
+      # service_principal_name: "enbridge-scm-deployer-sp-app-id"
+      user_name: siddesh.ujjni@databricks.com
+    variables:
+      catalog: serverless_stable_qr9if1_catalog
+      schema: enbridge_scm
+    permissions:
+      - user_name: siddesh.ujjni@databricks.com
+        level: CAN_MANAGE

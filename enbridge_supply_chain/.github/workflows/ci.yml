@@ -1,0 +1,62 @@
+# =============================================================================
+# CI Pipeline: Validate Enbridge SCM Bundle on Pull Request
+# =============================================================================
+# Triggers on PRs to main that touch bundle files.
+# Validates both dev and prod targets to catch issues early.
+# =============================================================================
+
+name: "CI - Validate Bundle"
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'databricks.yml'
+      - 'resources/**'
+      - 'src/**'
+      - '.github/workflows/ci.yml'
+
+# Required for Workload Identity Federation (OIDC)
+permissions:
+  id-token: write       # Needed to request OIDC token from GitHub
+  contents: read        # Needed to checkout code
+  pull-requests: write  # Needed to comment status on PR
+
+jobs:
+  validate:
+    name: "Validate Bundle"
+    runs-on: ubuntu-latest
+    environment: dev      # GitHub Environment (controls federation subject)
+
+    env:
+      # Workload Identity Federation - no secrets needed!
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_SP_CLIENT_ID }}
+      DATABRICKS_AUTH_TYPE: github-oidc
+
+    steps:
+      # 1. Checkout the PR code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Install Databricks CLI
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      # 3. Validate bundle for dev target
+      - name: Validate Bundle (dev)
+        run: databricks bundle validate --strict --target dev
+
+      # 4. Validate bundle for prod target (catch prod issues early!)
+      - name: Validate Bundle (prod)
+        run: databricks bundle validate --strict --target prod
+
+      # 5. Deploy to dev for integration testing
+      - name: Deploy to Dev
+        run: databricks bundle deploy --target dev
+
+      # 6. Run the pipeline in dev to verify
+      - name: Run Pipeline (Integration Test)
+        run: |
+          databricks bundle run enbridge_supply_chain_etl --target dev
+          echo "Pipeline integration test complete"

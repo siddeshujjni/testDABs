@@ -1,0 +1,4 @@
+{
+  "_comment": "Placeholder dashboard. To populate with your real dashboard, run: databricks bundle generate dashboard --existing-id 01f16c01279315ca971ba6051879ad53 --key scm_dashboard",
+  "pages": []
+}
