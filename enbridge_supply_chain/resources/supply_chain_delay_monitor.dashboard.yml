@@ -1,0 +1,6 @@
+resources:
+  dashboards:
+    supply_chain_delay_monitor:
+      display_name: "Supply Chain Delay Monitor"
+      warehouse_id: d94339f8fe9c593a
+      file_path: ../src/supply_chain_delay_monitor.lvdash.json
