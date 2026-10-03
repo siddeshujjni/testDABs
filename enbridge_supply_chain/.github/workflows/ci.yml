@@ -34,6 +34,10 @@ jobs:
       DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_SP_CLIENT_ID }}
       DATABRICKS_AUTH_TYPE: github-oidc
 
+    defaults:
+      run:
+        working-directory: enbridge_supply_chain
+
     steps:
       # 1. Checkout the PR code
       - name: Checkout

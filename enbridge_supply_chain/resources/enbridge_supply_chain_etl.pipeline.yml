@@ -28,8 +28,6 @@ resources:
         source_catalog: ${var.catalog}
         source_schema: ${var.schema}
 
-      # Development mode (overridden per target if needed)
-      development: true
       continuous: false
 
       # Permissions
