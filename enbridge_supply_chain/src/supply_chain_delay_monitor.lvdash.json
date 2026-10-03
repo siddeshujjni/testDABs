@@ -1,0 +1,925 @@
+{
+  "datasets": [
+    {
+      "displayName": "Top 10 Suppliers by Lead Time",
+      "name": "top_suppliers_sql",
+      "queryLines": [
+        "SELECT\n",
+        "  supplier_name,\n",
+        "  avg_lead_time_days,\n",
+        "  region,\n",
+        "  country\n",
+        "FROM\n",
+        "  serverless_stable_qr9if1_catalog.scm_workshop.gold_supplier_lead_time\n",
+        "ORDER BY\n",
+        "  avg_lead_time_days DESC\n",
+        "LIMIT 10"
+      ]
+    },
+    {
+      "config": {
+        "dimensions": [
+          {
+            "expr": "supplier_id",
+            "name": "supplier_id"
+          },
+          {
+            "expr": "supplier_name",
+            "name": "supplier_name"
+          },
+          {
+            "expr": "region",
+            "name": "region"
+          },
+          {
+            "expr": "country",
+            "name": "country"
+          }
+        ],
+        "measures": [
+          {
+            "expr": "AVG(avg_lead_time_days)",
+            "name": "avg_lead_time"
+          },
+          {
+            "expr": "SUM(num_orders)",
+            "name": "num_orders"
+          },
+          {
+            "expr": "SUM(total_spend)",
+            "name": "total_spend"
+          }
+        ],
+        "source": "serverless_stable_qr9if1_catalog.scm_workshop.gold_supplier_lead_time",
+        "version": "1.1"
+      },
+      "displayName": "Supplier Metrics",
+      "name": "supplier_metrics"
+    },
+    {
+      "config": {
+        "dimensions": [
+          {
+            "expr": "po_id",
+            "name": "po_id"
+          },
+          {
+            "expr": "supplier_id",
+            "name": "supplier_id"
+          },
+          {
+            "expr": "supplier_name",
+            "name": "supplier_name"
+          },
+          {
+            "expr": "product_category",
+            "name": "product_category"
+          },
+          {
+            "expr": "region",
+            "name": "region"
+          },
+          {
+            "expr": "country",
+            "name": "country"
+          },
+          {
+            "expr": "order_date",
+            "name": "order_date"
+          },
+          {
+            "expr": "DATE_TRUNC('month', order_date)",
+            "name": "order_month"
+          },
+          {
+            "expr": "received_date",
+            "name": "received_date"
+          },
+          {
+            "expr": "status",
+            "name": "status"
+          },
+          {
+            "expr": "quantity",
+            "name": "quantity"
+          },
+          {
+            "expr": "unit_cost",
+            "name": "unit_cost"
+          },
+          {
+            "expr": "total_cost",
+            "name": "total_cost"
+          },
+          {
+            "expr": "lead_time_days",
+            "name": "lead_time_days"
+          },
+          {
+            "expr": "is_delayed",
+            "name": "is_delayed"
+          },
+          {
+            "expr": "CASE WHEN is_delayed = 1 THEN 'Delayed' ELSE 'On Time' END",
+            "name": "is_delayed_label"
+          },
+          {
+            "expr": "delay_risk_score",
+            "name": "delay_risk_score"
+          },
+          {
+            "expr": "risk_category",
+            "name": "risk_category"
+          }
+        ],
+        "measures": [
+          {
+            "expr": "COUNT(*)",
+            "name": "total_orders"
+          },
+          {
+            "expr": "SUM(is_delayed)",
+            "name": "delayed_orders"
+          },
+          {
+            "expr": "MEASURE(delayed_orders) / MEASURE(total_orders)",
+            "name": "delay_rate"
+          }
+        ],
+        "source": "serverless_stable_qr9if1_catalog.scm_workshop.gold_po_delay_risk_scored",
+        "version": "1.1"
+      },
+      "displayName": "PO Metrics",
+      "name": "po_metrics"
+    }
+  ],
+  "pages": [
+    {
+      "displayName": "Page 1",
+      "layout": [
+        {
+          "position": {
+            "height": 2,
+            "width": 12,
+            "x": 0,
+            "y": 0
+          },
+          "widget": {
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Supply Chain Delay Monitor\n",
+                "Purchase order delay analysis across suppliers, regions, and product categories"
+              ]
+            },
+            "name": "title_text"
+          }
+        },
+        {
+          "position": {
+            "height": 3,
+            "width": 6,
+            "x": 0,
+            "y": 2
+          },
+          "widget": {
+            "name": "counter_delayed_orders",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "MEASURE(`PO_Metrics`.`delayed_orders`)",
+                      "name": "measure(PO_Metrics__delayed_orders)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`PO_Metrics`.`risk_category` IS NULL OR `PO_Metrics`.`risk_category` NOT IN ('High Risk')"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "value": {
+                  "displayName": "Delayed Orders",
+                  "fieldName": "measure(PO_Metrics__delayed_orders)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "fields": [],
+                  "value": "Delayed Orders"
+                }
+              },
+              "version": 2,
+              "widgetType": "counter"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 3,
+            "width": 6,
+            "x": 6,
+            "y": 2
+          },
+          "widget": {
+            "name": "counter_delay_rate",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "po_metrics",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "MEASURE(`delay_rate`)",
+                      "name": "measure(delay_rate)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "value": {
+                  "displayName": "Delay Rate",
+                  "fieldName": "measure(delay_rate)",
+                  "format": {
+                    "decimalPlaces": {
+                      "places": 1,
+                      "type": "exact"
+                    },
+                    "type": "number-percent"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Delay Rate"
+              },
+              "version": 2,
+              "widgetType": "counter"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 6,
+            "x": 0,
+            "y": 5
+          },
+          "widget": {
+            "name": "bar_risk_category",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "`PO_Metrics`.`risk_category`",
+                      "name": "PO_Metrics__risk_category"
+                    },
+                    {
+                      "expression": "MEASURE(`PO_Metrics`.`total_orders`)",
+                      "name": "measure(PO_Metrics__total_orders)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "color": {
+                  "fieldName": "PO_Metrics__risk_category",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                },
+                "x": {
+                  "fieldName": "PO_Metrics__risk_category",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(PO_Metrics__total_orders)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "fields": [],
+                  "value": "Delayed Orders by Risk Category"
+                }
+              },
+              "version": 3,
+              "widgetType": "bar"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 6,
+            "x": 6,
+            "y": 5
+          },
+          "widget": {
+            "name": "pie_status",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "po_metrics",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "MEASURE(`total_orders`)",
+                      "name": "measure(total_orders)"
+                    },
+                    {
+                      "expression": "`status`",
+                      "name": "status"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "angle": {
+                  "fieldName": "measure(total_orders)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Orders by Status"
+              },
+              "version": 3,
+              "widgetType": "pie"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 12,
+            "x": 0,
+            "y": 11
+          },
+          "widget": {
+            "name": "line_monthly_volume",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "`PO_Metrics`.`is_delayed_label`",
+                      "name": "PO_Metrics__is_delayed_label"
+                    },
+                    {
+                      "expression": "`PO_Metrics`.`order_month`",
+                      "name": "PO_Metrics__order_month"
+                    },
+                    {
+                      "expression": "MEASURE(`PO_Metrics`.`total_orders`)",
+                      "name": "measure(PO_Metrics__total_orders)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "color": {
+                  "fieldName": "PO_Metrics__is_delayed_label",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "x": {
+                  "fieldName": "PO_Metrics__order_month",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(PO_Metrics__total_orders)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "fields": [],
+                  "value": "Monthly PO Volume vs Delayed Orders"
+                }
+              },
+              "mark": {
+                "lineShape": "linear"
+              },
+              "version": 3,
+              "widgetType": "line"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 6,
+            "x": 0,
+            "y": 17
+          },
+          "widget": {
+            "name": "bar_top10_suppliers",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "top_suppliers_sql",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "`supplier_name`",
+                      "name": "supplier_name"
+                    },
+                    {
+                      "expression": "AVG(`avg_lead_time_days`)",
+                      "name": "avg(avg_lead_time_days)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "supplier_name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(avg_lead_time_days)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Top 10 Suppliers by Avg Lead Time"
+              },
+              "version": 3,
+              "widgetType": "bar"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 6,
+            "x": 6,
+            "y": 17
+          },
+          "widget": {
+            "name": "bar_delay_rate_category",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "po_metrics",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "`product_category`",
+                      "name": "product_category"
+                    },
+                    {
+                      "expression": "MEASURE(`delay_rate`)",
+                      "name": "measure(delay_rate)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "product_category",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(delay_rate)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Delay Rate by Product Category"
+              },
+              "version": 3,
+              "widgetType": "bar"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 5,
+            "width": 6,
+            "x": 0,
+            "y": 23
+          },
+          "widget": {
+            "name": "bar_region_lead_time",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "supplier_metrics",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "`region`",
+                      "name": "region"
+                    },
+                    {
+                      "expression": "MEASURE(`avg_lead_time`)",
+                      "name": "measure(avg_lead_time)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "region",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_lead_time)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Avg Lead Time by Region"
+              },
+              "version": 3,
+              "widgetType": "bar"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 5,
+            "width": 6,
+            "x": 6,
+            "y": 23
+          },
+          "widget": {
+            "name": "table_high_risk",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "po_metrics",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`po_id`",
+                      "name": "po_id"
+                    },
+                    {
+                      "expression": "`supplier_name`",
+                      "name": "supplier_name"
+                    },
+                    {
+                      "expression": "`product_category`",
+                      "name": "product_category"
+                    },
+                    {
+                      "expression": "`country`",
+                      "name": "country"
+                    },
+                    {
+                      "expression": "`order_date`",
+                      "name": "order_date"
+                    },
+                    {
+                      "expression": "`lead_time_days`",
+                      "name": "lead_time_days"
+                    },
+                    {
+                      "expression": "`delay_risk_score`",
+                      "name": "delay_risk_score"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`risk_category` IN ('High Risk')"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "po_id"
+                  },
+                  {
+                    "fieldName": "supplier_name"
+                  },
+                  {
+                    "fieldName": "product_category"
+                  },
+                  {
+                    "fieldName": "country"
+                  },
+                  {
+                    "fieldName": "order_date"
+                  },
+                  {
+                    "fieldName": "lead_time_days"
+                  },
+                  {
+                    "fieldName": "delay_risk_score"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "High Risk Purchase Orders"
+              },
+              "version": 2,
+              "widgetType": "table"
+            }
+          }
+        }
+      ],
+      "layoutVersion": "GRID_V1",
+      "name": "959165a5",
+      "pageType": "PAGE_TYPE_CANVAS"
+    },
+    {
+      "displayName": "Untitled page",
+      "layout": [
+        {
+          "position": {
+            "height": 6,
+            "width": 6,
+            "x": 0,
+            "y": 8
+          },
+          "widget": {
+            "name": "c9d7c594",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "top_suppliers_sql",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "`country`",
+                      "name": "country"
+                    },
+                    {
+                      "expression": "AVG(`avg_lead_time_days`)",
+                      "name": "avg(avg_lead_time_days)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "country",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(avg_lead_time_days)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "frame": {
+                "headerAlignment": "center",
+                "showDescription": true,
+                "showTitle": true,
+                "title": "Avg Lead Time by Country (Top Suppliers)"
+              },
+              "version": 3,
+              "widgetType": "bar"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 8,
+            "width": 12,
+            "x": 0,
+            "y": 0
+          },
+          "widget": {
+            "name": "7ef22c0a",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "top_suppliers_sql",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`supplier_name`",
+                      "name": "supplier_name"
+                    },
+                    {
+                      "expression": "`avg_lead_time_days`",
+                      "name": "avg_lead_time_days"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "data": {
+                "queryName": "main_query"
+              },
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "supplier_name"
+                  },
+                  {
+                    "fieldName": "avg_lead_time_days"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Top Suppliers by Lead Time"
+              },
+              "jsonSpec": {
+                "spec": "{\n  \"$schema\": \"https://vega.github.io/schema/vega-lite/v6.json\",\n  \"data\": {\n    \"name\": \"databricks_query\"\n  },\n  \"autosize\": {\n    \"type\": \"fit\",\n    \"contains\": \"padding\",\n    \"resize\": true\n  },\n  \"width\": \"container\",\n  \"height\": \"container\",\n  \"mark\": {\n    \"type\": \"bar\",\n    \"cornerRadiusTopLeft\": 4,\n    \"cornerRadiusTopRight\": 4,\n    \"color\": \"#4C78A8\"\n  },\n  \"encoding\": {\n    \"x\": {\n      \"field\": \"supplier_name\",\n      \"type\": \"nominal\",\n      \"sort\": \"-y\",\n      \"axis\": {\n        \"labelAngle\": -45,\n        \"title\": \"Supplier\",\n        \"labels\": true,\n        \"labelLimit\": 150\n      }\n    },\n    \"y\": {\n      \"field\": \"avg_lead_time_days\",\n      \"type\": \"quantitative\",\n      \"axis\": {\n        \"title\": \"Avg Lead Time (days)\"\n      },\n      \"scale\": {\n        \"zero\": true\n      }\n    }\n  },\n  \"config\": {\n    \"view\": {\n      \"stroke\": null\n    },\n    \"autosize\": {\n      \"type\": \"fit\",\n      \"contains\": \"padding\"\n    }\n  }\n}",
+                "type": "vega-lite"
+              },
+              "version": 1,
+              "widgetType": "custom-vega-viz"
+            }
+          }
+        }
+      ],
+      "layoutVersion": "GRID_V1",
+      "name": "2149f67e",
+      "pageType": "PAGE_TYPE_CANVAS"
+    },
+    {
+      "displayName": "Global Filters",
+      "layoutVersion": "GRID_V1",
+      "name": "3590a1cf",
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS"
+    }
+  ],
+  "relationshipGraphs": [
+    {
+      "relationships": [
+        {
+          "cardinality": "CARDINALITY_MANY_TO_ONE",
+          "from": "PO_Metrics",
+          "name": "PO_Metrics_Supplier_Metrics",
+          "on": "`PO_Metrics`.`supplier_id` = `Supplier_Metrics`.`supplier_id`",
+          "to": "Supplier_Metrics"
+        }
+      ],
+      "sources": [
+        {
+          "datasetName": "top_suppliers_sql",
+          "name": "Top_10_Suppliers_by_Lead_Time"
+        },
+        {
+          "datasetName": "supplier_metrics",
+          "name": "Supplier_Metrics"
+        },
+        {
+          "datasetName": "po_metrics",
+          "name": "PO_Metrics"
+        }
+      ]
+    }
+  ],
+  "uiSettings": {
+    "applyModeEnabled": false,
+    "theme": {
+      "canvasBackgroundColor": {
+        "dark": "#1F272D",
+        "light": "#FAFAFB"
+      },
+      "fontColor": {
+        "dark": "#E8ECF0",
+        "light": "#11171C"
+      },
+      "fontSettings": {
+        "fieldTitle": {
+          "fontSize": 12
+        },
+        "fieldValue": {
+          "fontSize": 13
+        }
+      },
+      "selectionColor": {
+        "dark": "#8ACAFF",
+        "light": "#2272B4"
+      },
+      "visualizationColors": [
+        "#077A9D",
+        "#FFAB00",
+        "#00A972",
+        "#FF3621",
+        "#8BCAE7",
+        "#AB4057",
+        "#99DDB4",
+        "#FCA4A1",
+        "#919191",
+        "#BF7080"
+      ],
+      "widgetBackgroundColor": {
+        "dark": "#11171C",
+        "light": "#FFFFFF"
+      },
+      "widgetHeaderAlignment": "LEFT"
+    }
+  }
+}
