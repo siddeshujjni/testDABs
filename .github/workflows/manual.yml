@@ -21,6 +21,10 @@ jobs:
       DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
       DATABRICKS_BUNDLE_TARGET: prod
 
+    defaults:
+      run:
+        working-directory: enbridge_supply_chain
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
